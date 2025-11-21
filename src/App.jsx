@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-const API_KEY = '145bc964febd7e6d01967b593ea8340e';
-const ENDPOINT = `https://gateway.thegraph.com/api/${API_KEY}/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV`;
+const API_KEY = import.meta.env.VITE_GRAPH_API_KEY;
+const ENDPOINT = API_KEY
+  ? `https://gateway.thegraph.com/api/${API_KEY}/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV`
+  : null;
 
 const GRAPHQL_QUERY = `
   {
@@ -69,6 +71,12 @@ export default function App() {
   const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchPools = useCallback(async () => {
+    if (!ENDPOINT) {
+      setError('请在 .env 文件中设置 VITE_GRAPH_API_KEY');
+      setStatus('error');
+      return;
+    }
+
     setStatus('loading');
     setError('');
 
