@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>The Graph Demo - Uniswap V3</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      button {
+        padding: 8px 16px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      pre {
+        background: #f5f5f5;
+        padding: 12px;
+        border-radius: 6px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>The Graph 链上数据读取 Demo</h1>
+    <p>
+      通过 The Graph 的 Uniswap V3 子图，读取 TVL 最大的 5 个资金池（主网数据）。
+    </p>
+
+    <button id="load">加载数据</button>
+
+    <h2>返回结果：</h2>
+    <pre id="output">点击上面的按钮开始查询...</pre>
+
+    <script>
+      // TODO：把这里换成你在 The Graph Studio 生成的 API Key
+      const API_KEY = "145bc964febd7e6d01967b593ea8340e";
+
+      // Uniswap V3 Mainnet Subgraph 的 Query URL（官方文档里的配置）
+      const ENDPOINT = `https://gateway.thegraph.com/api/${API_KEY}/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV`;
+
+      // GraphQL 查询语句：
+      // 取 TVL 最大的 5 个池子，返回池子 id、费率、token0 / token1 的符号、TVL、volume
+      const query = `
+        {
+          pools(first: 5, orderBy: totalValueLockedUSD, orderDirection: desc) {
+            id
+            feeTier
+            token0 {
+              symbol
+            }
+            token1 {
+              symbol
+            }
+            totalValueLockedUSD
+            volumeUSD
+          }
+        }
+      `;
+
+      const button = document.getElementById("load");
+      const output = document.getElementById("output");
+
+      button.onclick = async () => {
+        output.textContent = "查询中...";
+
+        try {
+          const res = await fetch(ENDPOINT, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ query }),
+          });
+
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error("HTTP Error " + res.status + ": " + text);
+          }
+
+          const json = await res.json();
+
+          if (json.errors) {
+            output.textContent = "GraphQL 错误：\n" + JSON.stringify(json.errors, null, 2);
+            return;
+          }
+
+          // 只展示 data.pools
+          output.textContent = JSON.stringify(json.data.pools, null, 2);
+        } catch (err) {
+          console.error(err);
+          output.textContent = "请求失败：\n" + err.message;
+        }
+      };
+    </script>
+  </body>
+</html>
